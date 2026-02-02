@@ -25,8 +25,8 @@ export default function Home() {
     apiFetch<any[]>("/chat/history")
       .then((msgs) => setChat(msgs))
       .catch(() => null);
-    apiFetch(`/round/history?limit=100`)
-      .then((rounds: any[]) => {
+    apiFetch<any[]>(`/round/history?limit=100`)
+      .then((rounds) => {
         const values = rounds
           .filter((r) => r.crashPoint)
           .map((r) => Number(r.crashPoint))
