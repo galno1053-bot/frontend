@@ -2,10 +2,6 @@
   "name": "galno-frontend",
   "private": true,
   "packageManager": "pnpm@9.15.4",
-  "engines": {
-    "node": "20.x",
-    "pnpm": "9.15.4"
-  },
   "workspaces": [
     "apps/*",
     "packages/*"

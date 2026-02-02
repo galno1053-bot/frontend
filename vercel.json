@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "installCommand": "corepack enable && corepack prepare pnpm@9.15.4 --activate && pnpm install",
+  "installCommand": "npx pnpm@9.15.4 install",
   "buildCommand": "pnpm -C apps/web build",
   "outputDirectory": "apps/web/.next"
 }
