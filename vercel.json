@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
   "installCommand": "npx pnpm@9.15.4 install",
-  "buildCommand": "pnpm -C apps/web build",
+  "buildCommand": "pnpm build",
   "outputDirectory": "apps/web/.next"
 }
