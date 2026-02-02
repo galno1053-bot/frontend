@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "../lib/store";
 
 interface TickPoint {
@@ -14,6 +14,7 @@ export function CrashChart() {
   const round = useAppStore((s) => s.round);
   const pointsRef = useRef<TickPoint[]>([]);
   const startRef = useRef<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   useEffect(() => {
     if (round?.status === "WAITING") {
@@ -21,6 +22,20 @@ export function CrashChart() {
       startRef.current = null;
     }
   }, [round?.status]);
+
+  useEffect(() => {
+    if (round?.status !== "WAITING" || !round.waitingEndsAt) {
+      setCountdown(null);
+      return;
+    }
+    const update = () => {
+      const remaining = Math.max(0, round.waitingEndsAt! - Date.now());
+      setCountdown(remaining / 1000);
+    };
+    update();
+    const id = setInterval(update, 100);
+    return () => clearInterval(id);
+  }, [round?.status, round?.waitingEndsAt]);
 
   const candles = useMemo(() => {
     const ticks = pointsRef.current;
@@ -112,6 +127,14 @@ export function CrashChart() {
   return (
     <div className="relative h-[360px] w-full rounded-2xl border border-white/10 bg-steel/60 crash-grid">
       <canvas ref={canvasRef} className="h-full w-full" />
+      {round?.status === "WAITING" && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <div className="text-[11px] uppercase tracking-[0.4em] text-bone/60">Game starts in</div>
+          <div className="mt-2 text-4xl font-semibold text-bone">
+            {countdown !== null ? countdown.toFixed(2) : "--"}s
+          </div>
+        </div>
+      )}
       {round?.status === "CRASHED" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <div className="text-5xl text-ember drop-shadow-md">Rugged!</div>

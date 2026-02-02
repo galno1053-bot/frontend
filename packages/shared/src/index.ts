@@ -12,6 +12,7 @@ export interface RoundState {
   serverSeedRevealed: string | null;
   clientSeed?: string;
   nonce?: number;
+  waitingEndsAt?: number | null;
 }
 
 export interface RoundTick {
