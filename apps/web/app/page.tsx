@@ -22,7 +22,9 @@ export default function Home() {
   const [range, setRange] = useState<"24h" | "7d" | "30d">("7d");
 
   useEffect(() => {
-    apiFetch("/chat/history").then(setChat).catch(() => null);
+    apiFetch<any[]>("/chat/history")
+      .then((msgs) => setChat(msgs))
+      .catch(() => null);
     apiFetch(`/round/history?limit=100`)
       .then((rounds: any[]) => {
         const values = rounds
