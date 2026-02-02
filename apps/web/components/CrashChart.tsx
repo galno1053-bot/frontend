@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAppStore } from "../lib/store";
+
+interface TickPoint {
+  t: number;
+  m: number;
+}
 
 export function CrashChart() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const multiplier = useAppStore((s) => s.multiplier);
   const round = useAppStore((s) => s.round);
-  const pointsRef = useRef<Array<{ x: number; y: number }>>([]);
+  const pointsRef = useRef<TickPoint[]>([]);
   const startRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -16,6 +21,37 @@ export function CrashChart() {
       startRef.current = null;
     }
   }, [round?.status]);
+
+  const candles = useMemo(() => {
+    const ticks = pointsRef.current;
+    const bucketMs = 220;
+    const result: Array<{ open: number; close: number; high: number; low: number }> = [];
+    if (ticks.length === 0) return result;
+
+    let currentBucket = Math.floor((ticks[0].t * 1000) / bucketMs);
+    let open = ticks[0].m;
+    let high = ticks[0].m;
+    let low = ticks[0].m;
+    let close = ticks[0].m;
+
+    for (const tick of ticks) {
+      const bucket = Math.floor((tick.t * 1000) / bucketMs);
+      if (bucket !== currentBucket) {
+        result.push({ open, high, low, close });
+        currentBucket = bucket;
+        open = tick.m;
+        high = tick.m;
+        low = tick.m;
+        close = tick.m;
+      } else {
+        high = Math.max(high, tick.m);
+        low = Math.min(low, tick.m);
+        close = tick.m;
+      }
+    }
+    result.push({ open, high, low, close });
+    return result.slice(-120);
+  }, [round?.status, multiplier]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -26,36 +62,52 @@ export function CrashChart() {
     if (round?.status === "RUNNING") {
       if (!startRef.current) startRef.current = performance.now();
       const t = (performance.now() - startRef.current) / 1000;
-      pointsRef.current.push({ x: t, y: multiplier });
+      pointsRef.current.push({ t, m: multiplier });
     }
 
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
     canvas.width = width * window.devicePixelRatio;
     canvas.height = height * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, width, height);
-    ctx.strokeStyle = "rgba(185, 242, 39, 0.8)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
 
-    const points = pointsRef.current;
-    if (points.length > 0) {
-      const maxX = Math.max(points[points.length - 1].x, 5);
-      const maxY = Math.max(...points.map((p) => p.y), 2);
+    if (candles.length === 0) return;
 
-      points.forEach((p, i) => {
-        const x = (p.x / maxX) * (width - 40) + 20;
-        const y = height - (p.y / maxY) * (height - 40) - 20;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-    }
+    const max = Math.max(...candles.map((c) => c.high), 2);
+    const min = Math.min(...candles.map((c) => c.low), 1);
+    const padX = 16;
+    const padY = 16;
+    const chartW = width - padX * 2;
+    const chartH = height - padY * 2;
+    const candleW = chartW / candles.length;
 
-    ctx.stroke();
-  }, [multiplier, round?.status]);
+    const mapY = (v: number) => padY + chartH - ((v - min) / (max - min)) * chartH;
+
+    candles.forEach((candle, idx) => {
+      const x = padX + idx * candleW;
+      const center = x + candleW / 2;
+      const openY = mapY(candle.open);
+      const closeY = mapY(candle.close);
+      const highY = mapY(candle.high);
+      const lowY = mapY(candle.low);
+      const up = candle.close >= candle.open;
+      const color = up ? "#31f27a" : "#ff5f4a";
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(center, highY);
+      ctx.lineTo(center, lowY);
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      const bodyH = Math.max(2, Math.abs(openY - closeY));
+      const bodyY = Math.min(openY, closeY);
+      ctx.fillRect(center - candleW * 0.25, bodyY, candleW * 0.5, bodyH);
+    });
+  }, [candles, multiplier, round?.status]);
 
   return (
     <div className="relative h-[360px] w-full rounded-2xl border border-white/10 bg-steel/60 crash-grid">
