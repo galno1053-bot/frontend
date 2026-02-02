@@ -35,6 +35,7 @@ export function CrashChart() {
     canvas.height = height * window.devicePixelRatio;
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, width, height);
     ctx.strokeStyle = "rgba(185, 242, 39, 0.8)";
     ctx.lineWidth = 2;
