@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "moduleResolution": "Bundler",
+    "types": ["node"]
+  },
+  "include": ["next-env.d.ts", "app/**/*", "components/**/*", "lib/**/*"]
+}
