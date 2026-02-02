@@ -40,7 +40,9 @@ export default function Home() {
   }, [setChat, setLast100, setRound]);
 
   useEffect(() => {
-    apiFetch(`/leaderboard?range=${range}`).then(setLeaderboard).catch(() => null);
+    apiFetch<any[]>(`/leaderboard?range=${range}`)
+      .then((rows) => setLeaderboard(rows))
+      .catch(() => null);
   }, [range, setLeaderboard]);
 
   return (
