@@ -17,9 +17,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    if (!token) return;
     const socket = io(config.socketUrl, {
-      auth: { token },
+      auth: token ? { token } : undefined,
       transports: ["websocket"]
     });
     socketRef.current = socket;
