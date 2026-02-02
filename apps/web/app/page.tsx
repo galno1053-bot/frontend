@@ -34,7 +34,9 @@ export default function Home() {
         setLast100(values);
       })
       .catch(() => null);
-    apiFetch("/round/current").then(setRound).catch(() => null);
+    apiFetch<any>("/round/current")
+      .then((round) => setRound(round))
+      .catch(() => null);
   }, [setChat, setLast100, setRound]);
 
   useEffect(() => {
