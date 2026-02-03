@@ -39,7 +39,7 @@ export function CrashChart() {
 
   const candles = useMemo(() => {
     const ticks = pointsRef.current;
-    const bucketMs = 220;
+    const bucketMs = 240;
     const result: Array<{ open: number; close: number; high: number; low: number }> = [];
     if (ticks.length === 0) return result;
 
@@ -90,8 +90,14 @@ export function CrashChart() {
 
     if (candles.length === 0) return;
 
-    const max = Math.max(...candles.map((c) => c.high), 2);
-    const min = Math.min(...candles.map((c) => c.low), 1);
+    const rawMax = Math.max(...candles.map((c) => c.high), 2);
+    const rawMin = Math.min(...candles.map((c) => c.low), 0.8);
+    const range = rawMax - rawMin;
+    const minRange = 0.8;
+    const mid = (rawMax + rawMin) / 2;
+    const max = range < minRange ? mid + minRange / 2 : rawMax;
+    const min = range < minRange ? Math.max(0.3, mid - minRange / 2) : rawMin;
+
     const padX = 16;
     const padY = 16;
     const chartW = width - padX * 2;
@@ -99,6 +105,27 @@ export function CrashChart() {
     const candleW = chartW / candles.length;
 
     const mapY = (v: number) => padY + chartH - ((v - min) / (max - min)) * chartH;
+
+    const drawLevel = (level: number) => {
+      if (level < min || level > max) return;
+      const y = mapY(level);
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      ctx.moveTo(padX, y);
+      ctx.lineTo(padX + chartW, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.font = "10px sans-serif";
+      ctx.fillText(`${level.toFixed(1)}x`, padX + 6, y - 6);
+    };
+
+    drawLevel(1);
+    drawLevel(1.5);
+    drawLevel(2);
 
     candles.forEach((candle, idx) => {
       const x = padX + idx * candleW;
@@ -120,8 +147,20 @@ export function CrashChart() {
       ctx.fillStyle = color;
       const bodyH = Math.max(2, Math.abs(openY - closeY));
       const bodyY = Math.min(openY, closeY);
-      ctx.fillRect(center - candleW * 0.25, bodyY, candleW * 0.5, bodyH);
+      ctx.fillRect(center - candleW * 0.3, bodyY, candleW * 0.6, bodyH);
     });
+
+    const last = candles[candles.length - 1];
+    if (last) {
+      const labelY = mapY(last.close);
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(padX + chartW - 56, labelY - 12, 52, 20);
+      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.strokeRect(padX + chartW - 56, labelY - 12, 52, 20);
+      ctx.fillStyle = "#e7e7e7";
+      ctx.font = "12px sans-serif";
+      ctx.fillText(`${last.close.toFixed(2)}x`, padX + chartW - 52, labelY + 3);
+    }
   }, [candles, multiplier, round?.status]);
 
   return (
