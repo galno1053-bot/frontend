@@ -39,7 +39,7 @@ export function CrashChart() {
 
   const candles = useMemo(() => {
     const ticks = pointsRef.current;
-    const bucketMs = 240;
+    const bucketMs = 260;
     const result: Array<{ open: number; close: number; high: number; low: number }> = [];
     if (ticks.length === 0) return result;
 
@@ -65,7 +65,7 @@ export function CrashChart() {
       }
     }
     result.push({ open, high, low, close });
-    return result.slice(-120);
+    return result.slice(-160);
   }, [round?.status, multiplier]);
 
   useEffect(() => {
@@ -93,16 +93,27 @@ export function CrashChart() {
     const rawMax = Math.max(...candles.map((c) => c.high), 2);
     const rawMin = Math.min(...candles.map((c) => c.low), 0.6);
     const range = rawMax - rawMin;
-    const minRange = 0.6;
+    const minRange = 0.55;
     const mid = (rawMax + rawMin) / 2;
     const max = range < minRange ? mid + minRange / 2 : rawMax;
-    const min = range < minRange ? Math.max(0.3, mid - minRange / 2) : rawMin;
+    const min = range < minRange ? Math.max(0.25, mid - minRange / 2) : rawMin;
 
-    const padX = 16;
-    const padY = 16;
+    const padX = 20;
+    const padY = 18;
     const chartW = width - padX * 2;
     const chartH = height - padY * 2;
-    const candleW = chartW / candles.length;
+
+    const baseBody = width < 420 ? 6 : width < 640 ? 7 : width < 900 ? 9 : width < 1200 ? 11 : 13;
+    const baseGap = baseBody * 0.7;
+    const maxCandles = Math.max(10, Math.floor(chartW / (baseBody + baseGap)));
+    const view = candles.slice(-maxCandles);
+
+    const total = view.length * baseBody + (view.length - 1) * baseGap;
+    const scale = Math.min(1, chartW / total);
+    const bodyW = baseBody * scale;
+    const gap = baseGap * scale;
+    const totalScaled = view.length * bodyW + (view.length - 1) * gap;
+    const startX = padX + (chartW - totalScaled) / 2;
 
     const mapY = (v: number) => padY + chartH - ((v - min) / (max - min)) * chartH;
 
@@ -127,9 +138,11 @@ export function CrashChart() {
     drawLevel(1.5);
     drawLevel(2);
 
-    candles.forEach((candle, idx) => {
-      const x = padX + idx * candleW;
-      const center = x + candleW / 2;
+    ctx.lineCap = "round";
+
+    view.forEach((candle, idx) => {
+      const x = startX + idx * (bodyW + gap);
+      const center = x + bodyW / 2;
       const openY = mapY(candle.open);
       const closeY = mapY(candle.close);
       const highY = mapY(candle.high);
@@ -137,34 +150,34 @@ export function CrashChart() {
       const up = candle.close >= candle.open;
       const color = up ? "#31f27a" : "#ff5f4a";
 
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = Math.max(1, bodyW * 0.14);
       ctx.beginPath();
       ctx.moveTo(center, highY);
       ctx.lineTo(center, lowY);
       ctx.stroke();
 
       ctx.fillStyle = color;
-      const bodyH = Math.max(2, Math.abs(openY - closeY));
+      const bodyH = Math.max(3, Math.abs(openY - closeY));
       const bodyY = Math.min(openY, closeY);
-      ctx.fillRect(center - candleW * 0.3, bodyY, candleW * 0.6, bodyH);
+      ctx.fillRect(x, bodyY, bodyW, bodyH);
     });
 
-    const last = candles[candles.length - 1];
+    const last = view[view.length - 1];
     if (last) {
       const labelY = mapY(last.close);
       ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.fillRect(padX + chartW - 56, labelY - 12, 52, 20);
+      ctx.fillRect(padX + chartW - 64, labelY - 13, 60, 22);
       ctx.strokeStyle = "rgba(255,255,255,0.2)";
-      ctx.strokeRect(padX + chartW - 56, labelY - 12, 52, 20);
+      ctx.strokeRect(padX + chartW - 64, labelY - 13, 60, 22);
       ctx.fillStyle = "#e7e7e7";
       ctx.font = "12px sans-serif";
-      ctx.fillText(`${last.close.toFixed(2)}x`, padX + chartW - 52, labelY + 3);
+      ctx.fillText(`${last.close.toFixed(3)}x`, padX + chartW - 58, labelY + 4);
     }
   }, [candles, multiplier, round?.status]);
 
   return (
-    <div className="relative h-[360px] w-full rounded-2xl border border-white/10 bg-steel/60 crash-grid">
+    <div className="relative h-[260px] w-full rounded-2xl border border-white/10 bg-steel/60 crash-grid sm:h-[320px] md:h-[380px] lg:h-[420px]">
       <canvas ref={canvasRef} className="h-full w-full" />
       {round?.status === "WAITING" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
