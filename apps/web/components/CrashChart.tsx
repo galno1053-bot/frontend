@@ -39,7 +39,7 @@ export function CrashChart() {
 
   const candles = useMemo(() => {
     const ticks = pointsRef.current;
-    const bucketMs = 260;
+    const bucketMs = 520;
     const result: Array<{ open: number; close: number; high: number; low: number }> = [];
     if (ticks.length === 0) return result;
 
@@ -90,14 +90,6 @@ export function CrashChart() {
 
     if (candles.length === 0) return;
 
-    const rawMax = Math.max(...candles.map((c) => c.high), 2);
-    const rawMin = Math.min(...candles.map((c) => c.low), 0.6);
-    const range = rawMax - rawMin;
-    const minRange = 0.55;
-    const mid = (rawMax + rawMin) / 2;
-    const max = range < minRange ? mid + minRange / 2 : rawMax;
-    const min = range < minRange ? Math.max(0.25, mid - minRange / 2) : rawMin;
-
     const padX = 20;
     const padY = 18;
     const chartW = width - padX * 2;
@@ -107,6 +99,14 @@ export function CrashChart() {
     const baseGap = baseBody * 0.7;
     const maxCandles = Math.max(10, Math.floor(chartW / (baseBody + baseGap)));
     const view = candles.slice(-maxCandles);
+
+    const rawMax = Math.max(...view.map((c) => c.high), 2);
+    const rawMin = Math.min(...view.map((c) => c.low), 0.6);
+    const range = rawMax - rawMin;
+    const minRange = 0.55;
+    const mid = (rawMax + rawMin) / 2;
+    const max = range < minRange ? mid + minRange / 2 : rawMax;
+    const min = range < minRange ? Math.max(0.25, mid - minRange / 2) : rawMin;
 
     const total = view.length * baseBody + (view.length - 1) * baseGap;
     const scale = Math.min(1, chartW / total);
