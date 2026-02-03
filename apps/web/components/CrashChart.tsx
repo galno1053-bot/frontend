@@ -91,9 +91,9 @@ export function CrashChart() {
     if (candles.length === 0) return;
 
     const rawMax = Math.max(...candles.map((c) => c.high), 2);
-    const rawMin = Math.min(...candles.map((c) => c.low), 0.8);
+    const rawMin = Math.min(...candles.map((c) => c.low), 0.6);
     const range = rawMax - rawMin;
-    const minRange = 0.8;
+    const minRange = 0.6;
     const mid = (rawMax + rawMin) / 2;
     const max = range < minRange ? mid + minRange / 2 : rawMax;
     const min = range < minRange ? Math.max(0.3, mid - minRange / 2) : rawMin;
